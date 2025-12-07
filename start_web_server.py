@@ -32,7 +32,7 @@ def get_local_ip():
         return "127.0.0.1"
 
 def main():
-    port = 8000
+    port = 8001  # Changed to 8001 to avoid conflict with Flask server on 8000
     local_ip = get_local_ip()
     
     # Change to the directory containing this script

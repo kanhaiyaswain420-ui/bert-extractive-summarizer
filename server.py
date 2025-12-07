@@ -2,6 +2,7 @@ from flask import Flask
 from flask import request, jsonify, abort, make_response
 from flask_cors import CORS
 import nltk
+import os
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 from nltk import tokenize
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     parser.add_argument('-greediness', dest='greediness', help='', default=0.45)
     parser.add_argument('-reduce', dest='reduce', help='', default='mean')
     parser.add_argument('-hidden', dest='hidden', help='', default=-2)
-    parser.add_argument('-port', dest='port', help='', default=8080)
+    parser.add_argument('-port', dest='port', help='', default=int(os.environ.get('PORT', 8000)))
     parser.add_argument('-host', dest='host', help='', default='0.0.0.0')
 
     args = parser.parse_args()

@@ -22,7 +22,7 @@ if not exist "server.py" (
 
 echo.
 echo Starting Flask server...
-echo Server will be available at: http://localhost:8080
+echo Server will be available at: http://localhost:8000
 echo.
 echo Press Ctrl+C to stop the server
 echo.

@@ -39,7 +39,7 @@ echo.
 echo Starting ngrok tunnel...
 echo This will create a public URL that anyone can access!
 echo.
-start "ngrok Tunnel" cmd /k "ngrok http 8080"
+start "ngrok Tunnel" cmd /k "ngrok http 8000"
 
 timeout /t 2 /nobreak >nul
 

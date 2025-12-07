@@ -543,23 +543,27 @@
             
             // If accessed via HTTPS (ngrok, localtunnel, etc.), use HTTPS
             if (protocol === 'https:') {
-                // For internet tunnels, use the same hostname but port 8080
-                // Most tunnels forward to port 8080 automatically
+                // For internet tunnels, use the same hostname but port 8000
+                // Most tunnels forward to port 8000 automatically
                 if (hostname.includes('ngrok.io') || hostname.includes('loca.lt') || 
                     hostname.includes('ngrok-free.app') || hostname.includes('ngrok.app')) {
                     // For ngrok/localtunnel, the API is on the same domain
                     return `${protocol}//${hostname}`;
                 }
-                // For other HTTPS, try port 8080
-                return port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}:8080`;
+                // For other HTTPS, try port 8000
+                return port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}:8000`;
             }
             
             // For HTTP (local network)
             if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
-                return `http://localhost:8080`;
+                return `http://localhost:8000`;
             } else {
                 // Network IP address
-                return port ? `http://${hostname}:${port}` : `http://${hostname}:8080`;
+                // If accessed via simple HTTP server on port 8001, use Flask server on port 8000 for API
+                if (port === '8001' || port === 8001) {
+                    return `http://${hostname}:8000`;
+                }
+                return port ? `http://${hostname}:${port}` : `http://${hostname}:8000`;
             }
         }
 

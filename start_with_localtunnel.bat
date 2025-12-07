@@ -42,9 +42,9 @@ echo NOTE: You'll need to press Enter when prompted to accept the tunnel
 echo.
 
 REM Try using Python localtunnel first, then npm
-venv\Scripts\python.exe -c "import subprocess; subprocess.Popen(['lt', '--port', '8080'], shell=True)" 2>nul
+venv\Scripts\python.exe -c "import subprocess; subprocess.Popen(['lt', '--port', '8000'], shell=True)" 2>nul
 if errorlevel 1 (
-    start "Localtunnel" cmd /k "lt --port 8080"
+    start "Localtunnel" cmd /k "lt --port 8000"
 )
 
 timeout /t 2 /nobreak >nul

@@ -15,7 +15,7 @@ echo Checking NLTK data...
 venv\Scripts\python.exe -c "import nltk; nltk.download('punkt_tab', quiet=True)" 2>nul
 
 echo.
-echo Starting server on http://localhost:8080
+echo Starting server on http://localhost:8000
 echo Press Ctrl+C to stop
 echo.
 

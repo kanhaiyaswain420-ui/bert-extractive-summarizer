@@ -25,11 +25,11 @@ if (-not (Test-Path "server.py")) {
 
 Write-Host ""
 Write-Host "Starting Flask server..." -ForegroundColor Yellow
-Write-Host "Server will be available at: http://localhost:8080" -ForegroundColor Green
+Write-Host "Server will be available at: http://localhost:8000" -ForegroundColor Green
 Write-Host ""
 Write-Host "Endpoints:" -ForegroundColor Cyan
-Write-Host "  POST http://localhost:8080/summarize_by_ratio?ratio=0.2" -ForegroundColor White
-Write-Host "  POST http://localhost:8080/summarize_by_sentence?num_sentences=5" -ForegroundColor White
+Write-Host "  POST http://localhost:8000/summarize_by_ratio?ratio=0.2" -ForegroundColor White
+Write-Host "  POST http://localhost:8000/summarize_by_sentence?num_sentences=5" -ForegroundColor White
 Write-Host ""
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
