@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BERT Text Summarizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .option-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .option-group label {
+            margin-bottom: 5px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-size: 18px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .result-text {
+            color: #555;
+            line-height: 1.8;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 10px;
+            color: #c33;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .char-count {
+            text-align: right;
+            color: #999;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+
+        #pdfInfo {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 BERT Text Summarizer</h1>
+        <p class="subtitle">Extract the most important sentences from your text</p>
+        <div id="serverInfo" style="text-align: center; padding: 10px; background: #e8f4f8; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #555; display: none;">
+            <strong>Server:</strong> <span id="serverUrlDisplay">Connecting...</span>
+        </div>
+
+        <form id="summarizeForm">
+            <div class="form-group">
+                <label>Input Method:</label>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="inputMethod" value="text" checked style="margin-right: 8px;">
+                        <span>Type/Paste Text</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="inputMethod" value="pdf" style="margin-right: 8px;">
+                        <span>Upload PDF</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" id="textInputGroup">
+                <label for="textInput">Enter your text:</label>
+                <textarea 
+                    id="textInput" 
+                    placeholder="Paste or type your text here that you want to summarize..."
+                ></textarea>
+                <div class="char-count">
+                    <span id="charCount">0</span> characters
+                </div>
+            </div>
+
+            <div class="form-group" id="pdfInputGroup" style="display: none;">
+                <label for="pdfInput">Upload PDF file:</label>
+                <input 
+                    type="file" 
+                    id="pdfInput" 
+                    accept=".pdf"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; cursor: pointer;"
+                >
+                <div id="pdfInfo" style="margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 8px; display: none;">
+                    <strong>PDF loaded:</strong> <span id="pdfFileName"></span><br>
+                    <strong>Pages:</strong> <span id="pdfPageCount"></span><br>
+                    <strong>Extracted text:</strong> <span id="pdfTextLength">0</span> characters
+                </div>
+            </div>
+
+            <div class="options">
+                <div class="option-group">
+                    <label for="summaryType">Summary Type:</label>
+                    <select id="summaryType">
+                        <option value="sentence">By Sentence Count</option>
+                        <option value="ratio">By Percentage</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label for="summaryValue" id="summaryValueLabel">Number of Sentences:</label>
+                    <input 
+                        type="number" 
+                        id="summaryValue" 
+                        value="3" 
+                        min="1" 
+                        max="50"
+                        required
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Generate Summary
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your text... This may take a moment.</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <h2>📄 Summary:</h2>
+            <div class="result-text" id="resultText"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('summarizeForm');
+        const textInput = document.getElementById('textInput');
+        const summaryType = document.getElementById('summaryType');
+        const summaryValue = document.getElementById('summaryValue');
+        const summaryValueLabel = document.getElementById('summaryValueLabel');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const resultText = document.getElementById('resultText');
+        const error = document.getElementById('error');
+        const charCount = document.getElementById('charCount');
+        const pdfInput = document.getElementById('pdfInput');
+        const textInputGroup = document.getElementById('textInputGroup');
+        const pdfInputGroup = document.getElementById('pdfInputGroup');
+        const pdfInfo = document.getElementById('pdfInfo');
+        const pdfFileName = document.getElementById('pdfFileName');
+        const pdfPageCount = document.getElementById('pdfPageCount');
+        const pdfTextLength = document.getElementById('pdfTextLength');
+        const inputMethodRadios = document.querySelectorAll('input[name="inputMethod"]');
+        
+        let extractedPdfText = '';
+
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Switch between text and PDF input
+        inputMethodRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'text') {
+                    textInputGroup.style.display = 'block';
+                    pdfInputGroup.style.display = 'none';
+                    textInput.required = true;
+                    pdfInput.required = false;
+                } else {
+                    textInputGroup.style.display = 'none';
+                    pdfInputGroup.style.display = 'block';
+                    textInput.required = false;
+                    pdfInput.required = true;
+                }
+                // Clear previous results
+                result.classList.remove('show');
+                error.classList.remove('show');
+            });
+        });
+
+        // Update character count
+        textInput.addEventListener('input', () => {
+            charCount.textContent = textInput.value.length;
+        });
+
+        // Handle PDF upload
+        pdfInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                showError('Please upload a valid PDF file.');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('show');
+            submitBtn.disabled = true;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                pdfFileName.textContent = file.name;
+                pdfPageCount.textContent = pdf.numPages;
+
+                // Extract text from all pages
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+
+                extractedPdfText = fullText.trim();
+                pdfTextLength.textContent = extractedPdfText.length;
+                pdfInfo.style.display = 'block';
+
+                // Hide loading
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+
+            } catch (err) {
+                console.error('Error extracting PDF:', err);
+                showError('Failed to extract text from PDF. Please make sure it\'s a valid PDF file.');
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Update label based on summary type
+        summaryType.addEventListener('change', () => {
+            if (summaryType.value === 'sentence') {
+                summaryValueLabel.textContent = 'Number of Sentences:';
+                summaryValue.value = 3;
+                summaryValue.min = 1;
+                summaryValue.max = 50;
+            } else {
+                summaryValueLabel.textContent = 'Percentage (0.1 to 1.0):';
+                summaryValue.value = 0.2;
+                summaryValue.min = 0.1;
+                summaryValue.max = 1.0;
+                summaryValue.step = 0.1;
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Hide previous results
+            result.classList.remove('show');
+            error.classList.remove('show');
+
+            // Get form values
+            const inputMethod = document.querySelector('input[name="inputMethod"]:checked').value;
+            let text = '';
+            
+            if (inputMethod === 'text') {
+                text = textInput.value.trim();
+            } else {
+                text = extractedPdfText;
+            }
+
+            const type = summaryType.value;
+            const value = parseFloat(summaryValue.value);
+
+            if (!text) {
+                if (inputMethod === 'text') {
+                    showError('Please enter some text to summarize.');
+                } else {
+                    showError('Please upload a PDF file first.');
+                }
+                return;
+            }
+
+            // Show loading, disable button
+            loading.classList.add('show');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            try {
+                // Get server URL (automatically detects localhost or network IP)
+                const serverUrl = getServerUrl();
+                
+                // Determine endpoint and parameters
+                let url, params;
+                
+                if (type === 'sentence') {
+                    url = `${serverUrl}/summarize_by_sentence`;
+                    params = new URLSearchParams({
+                        num_sentences: Math.round(value),
+                        min_length: 25,
+                        max_length: 500
+                    });
+                } else {
+                    url = `${serverUrl}/summarize_by_ratio`;
+                    params = new URLSearchParams({
+                        ratio: value,
+                        min_length: 25,
+                        max_length: 500
+                    });
+                }
+
+                // Make API request
+                const response = await fetch(`${url}?${params}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: text
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                // Display result
+                resultText.textContent = data.summary || 'No summary generated.';
+                result.classList.add('show');
+
+            } catch (err) {
+                console.error('Error:', err);
+                let errorMessage = 'Failed to generate summary. ';
+                
+                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                    const serverUrl = getServerUrl();
+                    errorMessage += `Make sure the server is running at ${serverUrl}`;
+                } else {
+                    errorMessage += err.message;
+                }
+                
+                showError(errorMessage);
+            } finally {
+                // Hide loading, enable button
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Generate Summary';
+            }
+        });
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+        }
+
+        // Function to get server URL (localhost, network IP, or internet URL)
+        function getServerUrl() {
+            // Check if there's a server URL in the URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const customUrl = urlParams.get('server');
+            
+            if (customUrl) {
+                return customUrl.replace(/\/$/, ''); // Remove trailing slash
+            }
+            
+            // Get current hostname and protocol
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            // If accessed via HTTPS (ngrok, localtunnel, etc.), use HTTPS
+            if (protocol === 'https:') {
+                // For internet tunnels, use the same hostname but port 8080
+                // Most tunnels forward to port 8080 automatically
+                if (hostname.includes('ngrok.io') || hostname.includes('loca.lt') || 
+                    hostname.includes('ngrok-free.app') || hostname.includes('ngrok.app')) {
+                    // For ngrok/localtunnel, the API is on the same domain
+                    return `${protocol}//${hostname}`;
+                }
+                // For other HTTPS, try port 8080
+                return port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}:8080`;
+            }
+            
+            // For HTTP (local network)
+            if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
+                return `http://localhost:8080`;
+            } else {
+                // Network IP address
+                return port ? `http://${hostname}:${port}` : `http://${hostname}:8080`;
+            }
+        }
+
+        // Display server URL
+        function updateServerDisplay() {
+            const serverUrl = getServerUrl();
+            const display = document.getElementById('serverUrlDisplay');
+            if (display) {
+                display.textContent = serverUrl;
+            }
+        }
+
+        // Check if server is running on page load
+        window.addEventListener('load', async () => {
+            updateServerDisplay();
+            const serverUrl = getServerUrl();
+            const serverInfo = document.getElementById('serverInfo');
+            const display = document.getElementById('serverUrlDisplay');
+            
+            // Show server info if accessed via network
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
+                if (serverInfo) serverInfo.style.display = 'block';
+            }
+            
+            try {
+                const response = await fetch(`${serverUrl}/`);
+                if (response.ok) {
+                    console.log('Server is running!', serverUrl);
+                    if (display) {
+                        display.textContent = serverUrl;
+                        display.style.color = '#28a745';
+                    }
+                }
+            } catch (err) {
+                console.warn('Server might not be running:', err);
+                if (display) {
+                    display.textContent = `${serverUrl} (Not connected)`;
+                    display.style.color = '#dc3545';
+                }
+                // Don't show error immediately, let user try first
+            }
+        });
+    </script>
+</body>
+</html>
+

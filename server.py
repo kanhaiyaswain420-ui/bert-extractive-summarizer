@@ -2,7 +2,8 @@ from flask import Flask
 from flask import request, jsonify, abort, make_response
 from flask_cors import CORS
 import nltk
-nltk.download('punkt')
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 from nltk import tokenize
 from typing import List
 import argparse
@@ -55,39 +56,62 @@ class Parser(object):
 def hello_world():
     return 'Hello, World!'
 
+@app.route('/summarizer.html', methods=['GET'])
+def serve_html():
+    """Serve the HTML file"""
+    try:
+        with open('summarizer.html', 'r', encoding='utf-8') as f:
+            return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return 'HTML file not found', 404
+
 @app.route('/summarize_by_ratio', methods=['POST'])
 def convert_raw_text_by_ratio():
-    ratio = float(request.args.get('ratio', 0.2))
-    min_length = int(request.args.get('min_length', 25))
-    max_length = int(request.args.get('max_length', 500))
+    try:
+        ratio = float(request.args.get('ratio', 0.2))
+        min_length = int(request.args.get('min_length', 25))
+        max_length = int(request.args.get('max_length', 500))
 
-    data = request.data
-    if not data:
-        abort(make_response(jsonify(message="Request must have raw text"), 400))
+        data = request.data
+        if not data:
+            abort(make_response(jsonify(message="Request must have raw text"), 400))
 
-    parsed = Parser(data).convert_to_paragraphs()
-    summary = summarizer(parsed, ratio=ratio, min_length=min_length, max_length=max_length)
+        parsed = Parser(data).convert_to_paragraphs()
+        summary = summarizer(parsed, ratio=ratio, min_length=min_length, max_length=max_length)
+        
+        # Ensure summary is a string
+        if isinstance(summary, list):
+            summary = ' '.join(summary)
 
-    return jsonify({
-        'summary': summary
-    })
+        return jsonify({
+            'summary': summary
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/summarize_by_sentence', methods=['POST'])
 def convert_raw_text_by_sent():
-    num_sentences = int(request.args.get('num_sentences', 5))
-    min_length = int(request.args.get('min_length', 25))
-    max_length = int(request.args.get('max_length', 500))
+    try:
+        num_sentences = int(request.args.get('num_sentences', 5))
+        min_length = int(request.args.get('min_length', 25))
+        max_length = int(request.args.get('max_length', 500))
 
-    data = request.data
-    if not data:
-        abort(make_response(jsonify(message="Request must have raw text"), 400))
+        data = request.data
+        if not data:
+            abort(make_response(jsonify(message="Request must have raw text"), 400))
 
-    parsed = Parser(data).convert_to_paragraphs()
-    summary = summarizer(parsed, num_sentences=num_sentences, min_length=min_length, max_length=max_length)
+        parsed = Parser(data).convert_to_paragraphs()
+        summary = summarizer(parsed, num_sentences=num_sentences, min_length=min_length, max_length=max_length)
+        
+        # Ensure summary is a string
+        if isinstance(summary, list):
+            summary = ' '.join(summary)
 
-    return jsonify({
-        'summary': summary
-    })
+        return jsonify({
+            'summary': summary
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
